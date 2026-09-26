@@ -39,3 +39,7 @@ luac.out
 *.x86_64
 *.hex
 
+# Local tooling artifacts (kept out of the public repo)
+ai-sessions-summary.md
+.claude/
+
