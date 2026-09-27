@@ -5,7 +5,7 @@ draining bar for the job abilities and spells **you choose**, and nothing else.
 
 Most cooldown displays track everything your job has, so the box fills with
 clutter. This one tracks only the whitelist you write, in a plain Lua file with
-comments, per character and per job.
+comments, per character and per job/sub-job.
 
 - Two boxes: one for your main job, one for your sub job.
 - Each row is a bar that drains as the recast runs down, with the name and the
@@ -13,8 +13,30 @@ comments, per character and per job.
 - The last few seconds (5 by default) turn the bar red.
 - Drag a box to move it; the position is remembered.
 
-> **Status: v0.1.0, first release candidate.** It has not been played in the
-> game yet. Expect rough edges, and please report what you see.
+## What this tracks (and what it doesn't)
+
+This addon is for the recasts that matter **inside a single fight or run** —
+a notorious monster, an Ambuscade, a run through Odyssey — where "when can I
+do that again" changes what you do in the next few seconds:
+
+- **Am I about to get hit?** Utsusemi is down and you need to know the moment
+  a fresh set of shadows is up.
+- **Is a buff about to fall off?** Paralyze, Slow, or another debuff needs
+  recasting before it drops so the fight doesn't slip out of control.
+- **Can I still move safely?** Sneak or Invisible came off mid-transit and
+  you need to know when you can recast it before you keep walking.
+- **Is my damage cooldown back?** As a DD, Warcry, a weapon skill setup
+  ability, or similar is up again and worth using now rather than later.
+
+Everything here is on the order of seconds to a couple of minutes — exactly
+the window where watching a bar is more useful than checking a timer in your
+head.
+
+**Two-hour abilities are intentionally out of scope** and are rejected if you
+try to whitelist them. A cooldown that long has no bearing on a single
+engagement: by the time it's back up, the fight, run, or session that
+mattered is long over. Track those elsewhere (or just remember them); this
+addon stays focused on what's actionable *right now*.
 
 ## Install
 
@@ -42,6 +64,13 @@ return {
             sub  = {
                 SAM = { 'Hasso', 'Meditate' },       -- used while your sub job is SAM
                 NIN = { 'Utsusemi: Ichi', { 'Utsusemi: Ni', label = 'Ni' } },
+            },
+        },
+        BLM = {                       -- another main job on the same character
+            main = { 'Elemental Seal', 'Sleep II', 'Stun' },
+            sub  = {
+                RDM = { 'Refresh' },              -- used while your sub job is RDM
+                WHM = { 'Silence' },               -- used while your sub job is WHM
             },
         },
     },
