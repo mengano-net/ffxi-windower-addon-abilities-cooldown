@@ -12,6 +12,16 @@ configured in a commented Lua file.
 It is a Lua **addon**, not a native plugin: plugins are compiled DLLs maintained
 by the Windower team, while addons are the supported route for community code.
 
+The whitelist is also a filter on *time horizon*, not just clutter. The
+abilities and spells worth a row are the ones whose recast is short enough to
+change what you do in the next few seconds of a single fight, NM, Ambuscade,
+or Odyssey run: shadows to reset before you get hit, a debuff like Paralyze
+or Slow to refresh before it drops, Sneak/Invisible to recast before you keep
+moving through a dangerous zone, a DD cooldown like Warcry worth using again
+now. That is the reasoning behind rejecting two-hour abilities outright (see
+below) rather than just discouraging them: a recast measured in hours cannot
+inform a decision inside a single engagement, so it has no row to draw.
+
 ## Behavior
 
 - **Whitelist only.** Only entries listed in `data/profiles.lua` are tracked.
@@ -82,6 +92,23 @@ tear a row apart. Every object is created non-draggable.
 
 There is no test framework. The addon is checked by copying the folder into
 Windower's `addons` folder, reloading, and trying it in the game.
+
+This machine dual-boots into Windows for FFXI; the repo is worked on from
+WSL2 against the Windows install, at:
+
+```
+/mnt/d/Program Files (x86)/Windower4/addons/abilities_cooldown
+```
+
+Run `scripts/deploy-to-windower.sh` to copy the six `.lua` modules and
+`data/profiles.example.lua` there. It never touches `data/profiles.lua` or
+`data/state.json` — those are the live, gitignored config and saved
+positions, and overwriting them would wipe real character data. If Windower
+is ever reinstalled elsewhere, override the path instead of editing the
+script: `WINDOWER_ADDONS_DIR="/mnt/d/new/path/addons" scripts/deploy-to-windower.sh`.
+
+After deploying, reload in game: `//lua reload abilities_cooldown` (or
+`//lua load abilities_cooldown` if it isn't currently loaded).
 
 ## Open questions, settled by testing in the game
 
