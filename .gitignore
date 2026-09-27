@@ -43,3 +43,9 @@ luac.out
 ai-sessions-summary.md
 .claude/
 
+# A player's own live config and saved positions. profiles.lua holds real
+# character names, so it must never be committed; only profiles.example.lua
+# ships. Both files are created by the addon on first run.
+abilities_cooldown/data/profiles.lua
+abilities_cooldown/data/state.json
+
