@@ -8,7 +8,7 @@
 -- Load:     //lua load abilities_cooldown
 -- Commands: //abilities_cooldown help
 ---------------------------------------------------
-_addon.name     = 'abilities_cooldown'
+_addon.name     = 'Abilities Cooldown'
 _addon.author   = 'Mengano'
 _addon.version  = '0.1.0'
 _addon.commands = { 'abilities_cooldown' }
