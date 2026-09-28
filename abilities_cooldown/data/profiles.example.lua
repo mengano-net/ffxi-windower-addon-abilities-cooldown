@@ -20,7 +20,7 @@ return {
         -- warn_seconds  = 5,            -- last N seconds turn the bar to the warning color
         -- font          = 'Arial',
         -- font_size     = 11,
-        -- bar_width     = 140,
+        -- bar_width     = 140,          -- minimum width; a box widens to fit long labels
         -- bar_height    = 22,
         -- row_spacing   = 2,
         -- bar_alpha     = 200,          -- 0-255, the filled part of the bar
@@ -48,6 +48,10 @@ return {
     --     { 'Utsusemi: Ichi', label = 'Ichi' }
     -- If a name is both a job ability and a spell, write 'ja:Name' or
     -- 'spell:Name' to say which one you mean.
+    --
+    -- Order matters: rows are shown in the order you list them, and are
+    -- never re-sorted by what you used last. The first name is the top row
+    -- (the bottom row if grow = 'up'). Put the ones you watch most first.
     --
     -- Not supported: two-hour abilities (they are rejected with a message).
     -- A name that is misspelled, not learned, or not available to your

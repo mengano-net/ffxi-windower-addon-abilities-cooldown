@@ -11,4 +11,7 @@ First implementation. Not yet tried in the game.
 - Two-hour abilities and unavailable or unknown entries are rejected with a red
   chat message.
 - Draggable boxes with saved positions.
+- Each box widens to fit its longest label and countdown; `bar_width` is the minimum.
+- Rows keep the order of the profile lists (documented in the README).
+- Labels longer than 32 characters are cut, so a box never grows past that.
 - Commands: `show`, `hide`, `toggle`, `reset position`, `status`, `debug`, `help`.
