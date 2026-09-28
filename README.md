@@ -79,6 +79,11 @@ return {
 
 - An entry is the name as it appears in game. Use `{ 'Name', label = 'Text' }`
   to show different text on the row.
+- **Order matters.** Rows appear in exactly the order you list them; the addon
+  never re-sorts them by what you used last. The first name in a list is the top
+  row (the bottom row if you set `grow = 'up'`), and rows for abilities that
+  are ready are simply skipped. Put the ones you watch most first. Each list
+  (`main`, and each sub job's list) is ordered on its own.
 - If a name is both a job ability and a spell, write `'ja:Name'` or `'spell:Name'`.
 - Two-hour abilities are not tracked; they are rejected with a message.
 - A name that is misspelled, not learned, or not available to your current job,

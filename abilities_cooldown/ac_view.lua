@@ -22,6 +22,17 @@ local M = {}
 -- Horizontal gap between the bar's edge and its text.
 local TEXT_PAD = 4
 
+-- Smallest space kept between a row's name and its countdown.
+local TEXT_GAP = 0
+
+-- Longest label drawn, in characters. Anything longer in the user's profile is
+-- cut to this, so one long label cannot stretch the box across the screen.
+local MAX_LABEL_CHARS = 32
+
+-- Pixels taken back off the fitted width. The measured text runs a little
+-- wider than it draws, so without this the bar ends too far past the text.
+local WIDTH_TRIM = 16
+
 local settings
 local boxes = {}
 local visible = true
@@ -29,7 +40,11 @@ local on_moved
 local drag
 
 local function new_box(name, position)
-    return { name = name, x = position.x, y = position.y, rows = {}, shown = 0 }
+    return {
+        name = name, x = position.x, y = position.y, rows = {}, shown = 0,
+        width = settings.bar_width, -- grows to fit the longest label; see fit_width
+        time_w = 0,                 -- widest countdown text seen so far
+    }
 end
 
 -- make_bar(color, alpha)
@@ -109,16 +124,16 @@ local function place_row(box, row, index)
     local step = settings.bar_height + settings.row_spacing
     local x = box.x
     local y = box.y + (settings.grow == 'up' and -index or index) * step
-    if row.x == x and row.y == y then
+    if row.x == x and row.y == y and row.placed_width == box.width then
         return
     end
-    row.x, row.y = x, y
+    row.x, row.y, row.placed_width = x, y, box.width
     row.track:pos(x, y)
     row.fill:pos(x, y)
     -- Roughly centers the text vertically in the bar; text_offset_y tunes it.
     local text_y = y + math.floor((settings.bar_height - settings.font_size * 1.5) / 2) + settings.text_offset_y
     row.name:pos(x + TEXT_PAD, text_y)
-    row.time:pos(x + settings.bar_width - TEXT_PAD, text_y)
+    row.time:pos(x + box.width - TEXT_PAD, text_y)
 end
 
 local function reposition(box)
@@ -148,6 +163,8 @@ function M.apply_settings(new_settings)
         end
         box.rows = {}
         box.shown = 0
+        box.width = settings.bar_width
+        box.time_w = 0
     end
 end
 
@@ -162,6 +179,34 @@ function M.set_position(name, x, y)
     reposition(box)
 end
 
+-- fit_width(box, count)
+-- The bar is never narrower than bar_width, but widens so the longest label
+-- and a countdown fit with room between them. All rows in a box share one
+-- width so the box stays a tidy column.
+local function fit_width(box, count)
+    local widest = 0
+    for i = 1, count do
+        widest = math.max(widest, box.rows[i].name_w or 0)
+    end
+    local needed = math.ceil(widest + TEXT_GAP + box.time_w + 2 * TEXT_PAD) - WIDTH_TRIM
+    box.width = math.max(settings.bar_width, needed)
+end
+
+-- report(name)
+-- One line of measured sizes for the debug command, or nil when the box is empty.
+function M.report(name)
+    local box = boxes[name]
+    if box.shown == 0 then
+        return nil
+    end
+    local parts = {}
+    for i = 1, box.shown do
+        parts[#parts + 1] = tostring(box.rows[i].name_w)
+    end
+    return string.format('width=%d (min %d) time_w=%s name_w=[%s]',
+        box.width, settings.bar_width, tostring(box.time_w), table.concat(parts, ','))
+end
+
 -- render(name, data)
 -- data: array of { label, time, fraction, warn }, top row first. Rows beyond
 -- the data are hidden. Nothing is drawn while the display is hidden.
@@ -169,6 +214,8 @@ function M.render(name, data)
     local box = boxes[name]
     local count = visible and #data or 0
 
+    -- Pass 1: create rows, set their text and measure it. Text is measured
+    -- once shown, since a hidden object may not report a size.
     for i = 1, count do
         local row = box.rows[i]
         if not row then
@@ -176,10 +223,37 @@ function M.render(name, data)
             box.rows[i] = row
         end
         local d = data[i]
+        local label = d.label:sub(1, MAX_LABEL_CHARS)
+
+        if row.name_text ~= label then
+            row.name:text(label)
+            row.name_text = label
+        end
+        if row.time_text ~= d.time then
+            row.time:text(d.time)
+            row.time_text = d.time
+        end
+        set_row_visible(row, true)
+
+        -- Measured every render, not cached: a size read right after the text
+        -- changes can be one frame stale, and the next render corrects it.
+        row.name_w = row.name:extents()
+        box.time_w = math.max(box.time_w, (row.time:extents()))
+    end
+    fit_width(box, count)
+
+    -- Pass 2: place and size everything at the settled width.
+    for i = 1, count do
+        local row = box.rows[i]
+        local d = data[i]
 
         place_row(box, row, i - 1)
 
-        local width = math.max(1, math.floor(settings.bar_width * d.fraction + 0.5))
+        if row.track_width ~= box.width then
+            row.track:size(box.width, settings.bar_height)
+            row.track_width = box.width
+        end
+        local width = math.max(1, math.floor(box.width * d.fraction + 0.5))
         if row.fill_width ~= width then
             row.fill:size(width, settings.bar_height)
             row.fill_width = width
@@ -189,15 +263,6 @@ function M.render(name, data)
             row.fill:color(c[1], c[2], c[3])
             row.warn = d.warn
         end
-        if row.name_text ~= d.label then
-            row.name:text(d.label)
-            row.name_text = d.label
-        end
-        if row.time_text ~= d.time then
-            row.time:text(d.time)
-            row.time_text = d.time
-        end
-        set_row_visible(row, true)
     end
 
     for i = count + 1, #box.rows do
@@ -230,7 +295,7 @@ local function hit(box, x, y)
         top = box.y
         bottom = box.y + (box.shown - 1) * step + settings.bar_height
     end
-    return x >= box.x and x <= box.x + settings.bar_width and y >= top and y <= bottom
+    return x >= box.x and x <= box.x + box.width and y >= top and y <= bottom
 end
 
 -- Mouse: kind 0 = move, 1 = left button down, 2 = left button up. Returning

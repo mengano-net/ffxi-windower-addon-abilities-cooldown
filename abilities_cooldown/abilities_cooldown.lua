@@ -204,6 +204,12 @@ local function refresh()
 
     if debug_enabled and os.clock() - last_debug >= 1 then
         last_debug = os.clock()
+        for _, box_name in ipairs({ 'main', 'sub' }) do
+            local line = view.report(box_name)
+            if line then
+                say(box_name .. ' box | ' .. line)
+            end
+        end
     end
 end
 
