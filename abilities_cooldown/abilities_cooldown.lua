@@ -32,6 +32,12 @@ local REFRESH_SECONDS = 0.25
 -- would report valid entries as unavailable.
 local SETTLE_SECONDS = 3
 
+-- On login the player object exists well before the ability and spell lists
+-- are filled in. After settling, keep waiting for real data; past this many
+-- seconds give up waiting and build anyway (a level-1 job can legitimately
+-- have nothing learned).
+local MAX_WAIT_SECONDS = 30
+
 local saved = state.load()        -- { visible, boxes = { main, sub } }
 local settings = config.settings()
 local tracker = timers.new_tracker()
@@ -87,6 +93,25 @@ local function build_context(player)
         sub_job_id     = player.sub_job_id,
         sub_job_level  = player.sub_job_level or 0,
     }
+end
+
+-- data_ready(ctx, player)
+-- True once the game has populated the lists we depend on: a real job level and
+-- at least one known ability or spell. Empty lists mean "not loaded yet", and
+-- resolving against them would reject every entry.
+local function data_ready(ctx, player)
+    if not player.main_job_id or (player.main_job_level or 0) < 1 then
+        return false
+    end
+    if next(ctx.abilities) ~= nil then
+        return true
+    end
+    for _, learned in pairs(ctx.spells) do
+        if learned then
+            return true
+        end
+    end
+    return false
 end
 
 local function resolve_list(entries, where, ctx)
@@ -192,9 +217,12 @@ local function refresh()
         pending_since = os.clock()
         clear_rows()
     end
-    if pending_since and os.clock() - pending_since >= SETTLE_SECONDS then
-        pending_since = nil
-        rebuild(player)
+    if pending_since then
+        local waited = os.clock() - pending_since
+        if waited >= SETTLE_SECONDS and (waited >= MAX_WAIT_SECONDS or data_ready(build_context(player), player)) then
+            pending_since = nil
+            rebuild(player)
+        end
     end
 
     local ability_recasts = windower.ffxi.get_ability_recasts() or {}
