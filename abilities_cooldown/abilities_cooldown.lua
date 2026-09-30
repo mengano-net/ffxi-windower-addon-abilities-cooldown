@@ -32,6 +32,12 @@ local REFRESH_SECONDS = 0.25
 -- would report valid entries as unavailable.
 local SETTLE_SECONDS = 3
 
+-- On login the player object exists well before the ability and spell lists
+-- are filled in. After settling, keep waiting for real data; past this many
+-- seconds give up waiting and build anyway (a level-1 job can legitimately
+-- have nothing learned).
+local MAX_WAIT_SECONDS = 30
+
 local saved = state.load()        -- { visible, boxes = { main, sub } }
 local settings = config.settings()
 local tracker = timers.new_tracker()
@@ -87,6 +93,25 @@ local function build_context(player)
         sub_job_id     = player.sub_job_id,
         sub_job_level  = player.sub_job_level or 0,
     }
+end
+
+-- data_ready(ctx, player)
+-- True once the game has populated the lists we depend on: a real job level and
+-- at least one known ability or spell. Empty lists mean "not loaded yet", and
+-- resolving against them would reject every entry.
+local function data_ready(ctx, player)
+    if not player.main_job_id or (player.main_job_level or 0) < 1 then
+        return false
+    end
+    if next(ctx.abilities) ~= nil then
+        return true
+    end
+    for _, learned in pairs(ctx.spells) do
+        if learned then
+            return true
+        end
+    end
+    return false
 end
 
 local function resolve_list(entries, where, ctx)
@@ -150,6 +175,31 @@ local function rebuild(player)
     counts.sub = #rows.sub
 end
 
+-- status_lines()
+-- The text of the status command, one string per line. Also printed when the
+-- whitelists finish loading, so a login confirms what was picked up.
+local function status_lines()
+    local player = windower.ffxi.get_player()
+    local lines = {
+        'version ' .. _addon.version .. ' | ' .. (saved.visible and 'shown' or 'hidden') .. ' | debug ' .. (debug_enabled and 'on' or 'off'),
+        player and ('player: ' .. tostring(player.name) .. ' ' .. tostring(player.main_job) .. '/' .. tostring(player.sub_job)) or 'player: not logged in',
+        'profile: ' .. profile_status,
+        string.format('entries loaded: main %d, sub %d; rejected: %d', counts.main, counts.sub, counts.rejected),
+    }
+    if pending_since then
+        lines[#lines + 1] = 'settling after a login or job change; the lists will load shortly'
+    end
+    return lines
+end
+
+-- announce()
+-- Printed after every rebuild (login, job change, reload).
+local function announce()
+    for _, line in ipairs(status_lines()) do
+        windower.add_to_chat(COLOR_INFO, 'Abilities Cooldown: ' .. line)
+    end
+end
+
 -- collect(list, ability_recasts, spell_recasts, box_name)
 -- Reads the live recast for each resolved row and returns the rows to draw
 -- (only those still on cooldown, in whitelist order).
@@ -192,9 +242,13 @@ local function refresh()
         pending_since = os.clock()
         clear_rows()
     end
-    if pending_since and os.clock() - pending_since >= SETTLE_SECONDS then
-        pending_since = nil
-        rebuild(player)
+    if pending_since then
+        local waited = os.clock() - pending_since
+        if waited >= SETTLE_SECONDS and (waited >= MAX_WAIT_SECONDS or data_ready(build_context(player), player)) then
+            pending_since = nil
+            rebuild(player)
+            announce()
+        end
     end
 
     local ability_recasts = windower.ffxi.get_ability_recasts() or {}
@@ -252,17 +306,8 @@ windower.register_event('addon command', function(command, ...)
             report('unknown reset target "' .. tostring(args[1]) .. '" (try: reset position)')
         end
     elseif command == 'status' then
-        local player = windower.ffxi.get_player()
-        say('version ' .. _addon.version .. ' | ' .. (saved.visible and 'shown' or 'hidden') .. ' | debug ' .. (debug_enabled and 'on' or 'off'))
-        if player then
-            say('player: ' .. tostring(player.name) .. ' ' .. tostring(player.main_job) .. '/' .. tostring(player.sub_job))
-        else
-            say('player: not logged in')
-        end
-        say('profile: ' .. profile_status)
-        say(string.format('entries loaded: main %d, sub %d; rejected: %d', counts.main, counts.sub, counts.rejected))
-        if pending_since then
-            say('settling after a login or job change; the lists will load shortly')
+        for _, line in ipairs(status_lines()) do
+            say(line)
         end
     elseif command == 'debug' then
         debug_enabled = not debug_enabled

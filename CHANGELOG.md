@@ -15,3 +15,8 @@ First implementation. Not yet tried in the game.
 - Rows keep the order of the profile lists (documented in the README).
 - Labels longer than 32 characters are cut, so a box never grows past that.
 - Commands: `show`, `hide`, `toggle`, `reset position`, `status`, `debug`, `help`.
+- At login the whitelist is resolved only once the game has loaded the ability
+  and spell lists (up to 30 seconds), so valid entries are no longer rejected as
+  "not available" right after logging in.
+- A status summary (`Abilities Cooldown: ...`) prints to chat each time the
+  whitelists finish loading.
