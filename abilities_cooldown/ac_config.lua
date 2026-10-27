@@ -27,6 +27,8 @@ M.defaults = {
     bg_alpha      = 168,        -- 0-255, the empty part of the bar (bar style)
     text_offset_y = 0,          -- nudge row text up (negative) or down (positive)
     grow          = 'down',     -- 'down' or 'up': which way new rows stack
+    background    = true,       -- draw a panel behind each box
+    background_alpha = 170,     -- 0-255, the panel's opacity
     -- The fill fades from start (just used) to ready (about to come back)
     -- around the color wheel, so red passes through orange and yellow.
     colors = {
@@ -34,6 +36,7 @@ M.defaults = {
         ready = { 60, 220, 60 },
         text  = { 255, 255, 255 },
         track = { 0, 0, 0 },
+        background = { 160, 160, 160 }, -- the panel's top; it darkens toward the bottom
     },
 }
 
@@ -48,6 +51,7 @@ local RULES = {
     row_spacing   = { test = function(v) return v >= 0 end,                   text = 'a number of 0 or more' },
     bar_alpha     = { test = function(v) return v >= 0 and v <= 255 end,      text = 'a number from 0 to 255' },
     bg_alpha      = { test = function(v) return v >= 0 and v <= 255 end,      text = 'a number from 0 to 255' },
+    background_alpha = { test = function(v) return v >= 0 and v <= 255 end,   text = 'a number from 0 to 255' },
     grow          = { test = function(v) return v == 'up' or v == 'down' end, text = '"up" or "down"' },
 }
 

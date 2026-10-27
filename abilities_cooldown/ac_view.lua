@@ -9,6 +9,9 @@
 -- line; 'bar' draws it inside a filled box. Either way the fill drains as the
 -- recast runs down and fades from colors.start to colors.ready.
 --
+-- Behind each box sits an optional panel: one image with a grey gradient
+-- texture (textures/panel.png), sized to the rows currently shown.
+--
 -- Dragging is handled here, not by the texts/images libraries: their built-in
 -- drag moves one object at a time, which would tear a row apart. Every object
 -- is created non-draggable, and one mouse handler moves a whole box.
@@ -42,6 +45,12 @@ local WIDTH_TRIM = 16
 -- (bar_alpha and bg_alpha only apply to the bar style.)
 local LINE_ALPHA  = 255
 local TRACK_ALPHA = 200
+
+-- Space between the rows and the panel's edge. The top needs more: in the
+-- underline style the text rises a few pixels above the row's slot.
+local PANEL_PAD_X      = 8
+local PANEL_PAD_TOP    = 8
+local PANEL_PAD_BOTTOM = 6
 
 local settings
 local boxes = {}
@@ -100,12 +109,74 @@ local function fade(progress)
     return hsv_to_rgb(h1 + (h2 - h1) * t, s1 + (s2 - s1) * t, v1 + (v2 - v1) * t)
 end
 
+-- make_panel()
+-- The gradient behind a box, or nil when background is off. Starts hidden.
+-- It must be created before the box's rows: images draw in creation order.
+local function make_panel()
+    if not settings.background then
+        return nil
+    end
+    local c = settings.colors.background
+    local panel = images.new({
+        pos       = { x = 0, y = 0 },
+        color     = { alpha = settings.background_alpha, red = c[1], green = c[2], blue = c[3] },
+        size      = { width = settings.bar_width, height = settings.bar_height },
+        texture   = { path = windower.addon_path .. 'textures/panel.png', fit = false },
+        draggable = false,
+    })
+    panel:hide()
+    return panel
+end
+
 local function new_box(name, position)
     return {
         name = name, x = position.x, y = position.y, rows = {}, shown = 0,
         width = settings.bar_width, -- grows to fit the longest label; see fit_width
         time_w = 0,                 -- widest countdown text seen so far
+        panel = make_panel(),
     }
+end
+
+-- panel_rect(box): x, y, width, height around the rows currently shown.
+-- Also the area that starts a drag.
+local function panel_rect(box)
+    local step = settings.bar_height + settings.row_spacing
+    local rows_h = (box.shown - 1) * step + settings.bar_height
+    local top = settings.grow == 'up' and box.y - (box.shown - 1) * step or box.y
+    return box.x - PANEL_PAD_X, top - PANEL_PAD_TOP,
+        box.width + 2 * PANEL_PAD_X, rows_h + PANEL_PAD_TOP + PANEL_PAD_BOTTOM
+end
+
+-- update_panel(box): fit the panel to the shown rows, or hide it when the
+-- box is empty. Skips the calls when nothing changed.
+local function update_panel(box)
+    local panel = box.panel
+    if not panel then
+        return
+    end
+    local on = box.shown > 0
+    if box.panel_on ~= on then
+        box.panel_on = on
+        if on then panel:show() else panel:hide() end
+    end
+    if not on then
+        return
+    end
+    local x, y, w, h = panel_rect(box)
+    local key = x .. ',' .. y .. ',' .. w .. ',' .. h
+    if box.panel_key ~= key then
+        panel:pos(x, y)
+        panel:size(w, h)
+        box.panel_key = key
+    end
+end
+
+local function destroy_panel(box)
+    if box.panel then
+        box.panel:destroy()
+        box.panel = nil
+    end
+    box.panel_on, box.panel_key = nil, nil
 end
 
 -- make_bar(color, alpha)
@@ -216,6 +287,7 @@ local function reposition(box)
     for i = 1, box.shown do
         place_row(box, box.rows[i], i - 1)
     end
+    update_panel(box)
 end
 
 -- init(new_settings, positions, moved_callback)
@@ -241,6 +313,9 @@ function M.apply_settings(new_settings)
         box.shown = 0
         box.width = settings.bar_width
         box.time_w = 0
+        -- New panel before any new row, so it stays underneath.
+        destroy_panel(box)
+        box.panel = make_panel()
     end
 end
 
@@ -347,6 +422,7 @@ function M.render(name, data)
         set_row_visible(box.rows[i], false)
     end
     box.shown = count
+    update_panel(box)
 end
 
 function M.destroy()
@@ -356,24 +432,17 @@ function M.destroy()
         end
         box.rows = {}
         box.shown = 0
+        destroy_panel(box)
     end
 end
 
--- hit(box, x, y): is the point inside the rows currently drawn for this box?
+-- hit(box, x, y): is the point inside the box as drawn, panel included?
 local function hit(box, x, y)
     if box.shown == 0 then
         return false
     end
-    local step = settings.bar_height + settings.row_spacing
-    local top, bottom
-    if settings.grow == 'up' then
-        top = box.y - (box.shown - 1) * step
-        bottom = box.y + settings.bar_height
-    else
-        top = box.y
-        bottom = box.y + (box.shown - 1) * step + settings.bar_height
-    end
-    return x >= box.x and x <= box.x + box.width and y >= top and y <= bottom
+    local px, py, pw, ph = panel_rect(box)
+    return x >= px and x <= px + pw and y >= py and y <= py + ph
 end
 
 -- Mouse: kind 0 = move, 1 = left button down, 2 = left button up. Returning
