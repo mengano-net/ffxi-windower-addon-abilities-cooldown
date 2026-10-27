@@ -7,7 +7,10 @@ First implementation. Not yet tried in the game.
 - Two boxes (main job, sub job) with a draining bar, name and seconds left per row.
 - Whitelist-only tracking of job abilities and spells from a commented Lua file,
   per character and main job, with sub-job lists.
-- Green "almost ready" window (default last 5 seconds); rows disappear when ready.
+- Rows are text over a 7px line that drains and fades red -> orange -> yellow
+  -> green over the recast; rows disappear when ready. The original filled bar
+  is still available with `style = 'bar'`. Colors are `colors.start` and
+  `colors.ready`.
 - Two-hour abilities and unavailable or unknown entries are rejected with a red
   chat message.
 - Draggable boxes with saved positions.

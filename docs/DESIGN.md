@@ -33,8 +33,12 @@ inform a decision inside a single engagement, so it has no row to draw.
 - **Seconds only.** Ability recasts are whole seconds. Spell recasts arrive in
   1/60-second ticks and are divided by 60. Under a minute shows `42`, from a
   minute up shows `2:22`; the number is rounded up.
-- **Warning window.** The last `warn_seconds` (default 5) change the bar color.
-  Color only, no blinking.
+- **Color fade.** The fill fades from `colors.start` (red) to `colors.ready`
+  (green) over the whole recast, blending hue rather than RGB so it passes
+  through orange and yellow instead of muddy brown. Color only, no blinking.
+  Picked in the `ac_lab` style lab over a last-5-seconds warning color.
+- **Style.** `underline` (default): the text sits over a 7px line that drains.
+  `bar`: the original filled box. Same four objects per row either way.
 - **Bar length.** The bar's full length is the largest remaining time seen since
   the ability was last used. A reading higher than the previous one counts as a
   new use. If the addon starts mid-cooldown, that bar looks full until the
@@ -80,7 +84,7 @@ subfolder `require`.
 | `abilities_cooldown.lua` | Entry point: events, commands, refresh loop |
 | `ac_config.lua` | Loads and validates `profiles.lua` |
 | `ac_resolve.lua` | Turns a whitelist name into a trackable row, or a reason it can't |
-| `ac_timers.lua` | Time text, warning window, bar-maximum tracking |
+| `ac_timers.lua` | Time text, bar fraction, bar-maximum tracking |
 | `ac_state.lua` | Reads and writes `state.json` |
 | `ac_view.lua` | Draws the boxes; handles dragging |
 

@@ -16,19 +16,22 @@ local M = {}
 -- Every option a user can put in the `settings` block, with its default.
 -- Colors are { red, green, blue }, each 0-255.
 M.defaults = {
-    warn_seconds  = 5,          -- last N seconds turn the bar to the warning color
+    style         = 'underline', -- 'underline' (text over a thin line) or 'bar' (filled box)
+    line_height   = 7,          -- thickness of the line in the underline style
     font          = 'Arial',
     font_size     = 11,
     bar_width     = 140,
     bar_height    = 22,
     row_spacing   = 2,
-    bar_alpha     = 200,        -- 0-255, the filled part of the bar
-    bg_alpha      = 168,        -- 0-255, the empty part of the bar
+    bar_alpha     = 200,        -- 0-255, the filled part of the bar (bar style)
+    bg_alpha      = 168,        -- 0-255, the empty part of the bar (bar style)
     text_offset_y = 0,          -- nudge row text up (negative) or down (positive)
     grow          = 'down',     -- 'down' or 'up': which way new rows stack
+    -- The fill fades from start (just used) to ready (about to come back)
+    -- around the color wheel, so red passes through orange and yellow.
     colors = {
-        bar   = { 255, 200, 0 },
-        warn  = { 60, 220, 60 },
+        start = { 230, 45, 35 },
+        ready = { 60, 220, 60 },
         text  = { 255, 255, 255 },
         track = { 0, 0, 0 },
     },
@@ -37,7 +40,8 @@ M.defaults = {
 -- Extra rules beyond "same type as the default". Each returns true if the
 -- value is acceptable.
 local RULES = {
-    warn_seconds  = { test = function(v) return v >= 0 end,                   text = 'a number of 0 or more' },
+    style         = { test = function(v) return v == 'underline' or v == 'bar' end, text = '"underline" or "bar"' },
+    line_height   = { test = function(v) return v >= 1 end,                   text = 'a number of 1 or more' },
     font_size     = { test = function(v) return v >= 6 end,                   text = 'a number of 6 or more' },
     bar_width     = { test = function(v) return v >= 40 end,                  text = 'a number of 40 or more' },
     bar_height    = { test = function(v) return v >= 10 end,                  text = 'a number of 10 or more' },

@@ -5,6 +5,10 @@
 -- name on the left, the countdown right-aligned). Rows are pooled and
 -- reused; unused ones are just hidden.
 --
+-- Two styles share those objects. 'underline' draws the text over a thin
+-- line; 'bar' draws it inside a filled box. Either way the fill drains as the
+-- recast runs down and fades from colors.start to colors.ready.
+--
 -- Dragging is handled here, not by the texts/images libraries: their built-in
 -- drag moves one object at a time, which would tear a row apart. Every object
 -- is created non-draggable, and one mouse handler moves a whole box.
@@ -12,7 +16,7 @@
 -- Usage:
 --   local view = require('ac_view')
 --   view.init(settings, state.boxes, function(name, x, y) ... end)
---   view.render('main', { { label = 'Hasso', time = '42', fraction = 0.7, warn = false } })
+--   view.render('main', { { label = 'Hasso', time = '42', fraction = 0.7 } })
 ---------------------------------------------------
 local texts  = require('texts')
 local images = require('images')
@@ -33,11 +37,68 @@ local MAX_LABEL_CHARS = 32
 -- wider than it draws, so without this the bar ends too far past the text.
 local WIDTH_TRIM = 16
 
+-- The underline style's line is fully opaque over a darker track, which reads
+-- better at a few pixels tall than the bar style's see-through fill.
+-- (bar_alpha and bg_alpha only apply to the bar style.)
+local LINE_ALPHA  = 255
+local TRACK_ALPHA = 200
+
 local settings
 local boxes = {}
 local visible = true
 local on_moved
 local drag
+
+local function underline()
+    return settings.style == 'underline'
+end
+
+-- Height of the drawn fill and track: the whole bar, or just the line.
+local function fill_height()
+    return underline() and settings.line_height or settings.bar_height
+end
+
+local function rgb_to_hsv(c)
+    local r, g, b = c[1] / 255, c[2] / 255, c[3] / 255
+    local max, min = math.max(r, g, b), math.min(r, g, b)
+    local d = max - min
+    local h = 0
+    if d > 0 then
+        if max == r then
+            h = ((g - b) / d) % 6
+        elseif max == g then
+            h = (b - r) / d + 2
+        else
+            h = (r - g) / d + 4
+        end
+        h = h * 60
+    end
+    return h, max == 0 and 0 or d / max, max
+end
+
+local function hsv_to_rgb(h, s, v)
+    local c = v * s
+    local x = c * (1 - math.abs((h / 60) % 2 - 1))
+    local m = v - c
+    local r, g, b
+    if h < 60 then r, g, b = c, x, 0
+    elseif h < 120 then r, g, b = x, c, 0
+    elseif h < 180 then r, g, b = 0, c, x
+    elseif h < 240 then r, g, b = 0, x, c
+    elseif h < 300 then r, g, b = x, 0, c
+    else r, g, b = c, 0, x end
+    return math.floor((r + m) * 255 + 0.5), math.floor((g + m) * 255 + 0.5), math.floor((b + m) * 255 + 0.5)
+end
+
+-- fade(progress): the fill color, 0 = just used (start) to 1 = ready.
+-- Blends hue, saturation and brightness rather than red/green/blue, so the
+-- colors in between stay bright instead of going muddy.
+local function fade(progress)
+    local h1, s1, v1 = rgb_to_hsv(settings.colors.start)
+    local h2, s2, v2 = rgb_to_hsv(settings.colors.ready)
+    local t = math.max(0, math.min(1, progress))
+    return hsv_to_rgb(h1 + (h2 - h1) * t, s1 + (s2 - s1) * t, v1 + (v2 - v1) * t)
+end
 
 local function new_box(name, position)
     return {
@@ -53,7 +114,7 @@ local function make_bar(color, alpha)
     return images.new({
         pos       = { x = 0, y = 0 },
         color     = { alpha = alpha, red = color[1], green = color[2], blue = color[3] },
-        size      = { width = settings.bar_width, height = settings.bar_height },
+        size      = { width = settings.bar_width, height = fill_height() },
         texture   = { path = '', fit = false },
         draggable = false,
     })
@@ -85,8 +146,13 @@ end
 -- draws on top of it.
 local function make_row()
     local row = {}
-    row.track = make_bar(settings.colors.track, settings.bg_alpha)
-    row.fill  = make_bar(settings.colors.bar, settings.bar_alpha)
+    if underline() then
+        row.track = make_bar(settings.colors.track, TRACK_ALPHA)
+        row.fill  = make_bar(settings.colors.start, LINE_ALPHA)
+    else
+        row.track = make_bar(settings.colors.track, settings.bg_alpha)
+        row.fill  = make_bar(settings.colors.start, settings.bar_alpha)
+    end
     row.name  = make_text(false)
     row.time  = make_text(true)
     row.on    = false
@@ -128,12 +194,22 @@ local function place_row(box, row, index)
         return
     end
     row.x, row.y, row.placed_width = x, y, box.width
-    row.track:pos(x, y)
-    row.fill:pos(x, y)
-    -- Roughly centers the text vertically in the bar; text_offset_y tunes it.
-    local text_y = y + math.floor((settings.bar_height - settings.font_size * 1.5) / 2) + settings.text_offset_y
-    row.name:pos(x + TEXT_PAD, text_y)
-    row.time:pos(x + box.width - TEXT_PAD, text_y)
+    if underline() then
+        -- The line sits at the bottom of the row's slot, the text just above it.
+        local line_y = y + settings.bar_height - settings.line_height
+        local text_y = line_y - math.floor(settings.font_size * 1.6) + settings.text_offset_y
+        row.track:pos(x, line_y)
+        row.fill:pos(x, line_y)
+        row.name:pos(x, text_y)
+        row.time:pos(x + box.width, text_y)
+    else
+        row.track:pos(x, y)
+        row.fill:pos(x, y)
+        -- Roughly centers the text vertically in the bar; text_offset_y tunes it.
+        local text_y = y + math.floor((settings.bar_height - settings.font_size * 1.5) / 2) + settings.text_offset_y
+        row.name:pos(x + TEXT_PAD, text_y)
+        row.time:pos(x + box.width - TEXT_PAD, text_y)
+    end
 end
 
 local function reposition(box)
@@ -208,7 +284,7 @@ function M.report(name)
 end
 
 -- render(name, data)
--- data: array of { label, time, fraction, warn }, top row first. Rows beyond
+-- data: array of { label, time, fraction }, top row first. Rows beyond
 -- the data are hidden. Nothing is drawn while the display is hidden.
 function M.render(name, data)
     local box = boxes[name]
@@ -243,6 +319,7 @@ function M.render(name, data)
     fit_width(box, count)
 
     -- Pass 2: place and size everything at the settled width.
+    local height = fill_height()
     for i = 1, count do
         local row = box.rows[i]
         local d = data[i]
@@ -250,18 +327,19 @@ function M.render(name, data)
         place_row(box, row, i - 1)
 
         if row.track_width ~= box.width then
-            row.track:size(box.width, settings.bar_height)
+            row.track:size(box.width, height)
             row.track_width = box.width
         end
         local width = math.max(1, math.floor(box.width * d.fraction + 0.5))
         if row.fill_width ~= width then
-            row.fill:size(width, settings.bar_height)
+            row.fill:size(width, height)
             row.fill_width = width
         end
-        if row.warn ~= d.warn then
-            local c = d.warn and settings.colors.warn or settings.colors.bar
-            row.fill:color(c[1], c[2], c[3])
-            row.warn = d.warn
+        local r, g, b = fade(1 - d.fraction)
+        local color = r * 65536 + g * 256 + b
+        if row.color ~= color then
+            row.fill:color(r, g, b)
+            row.color = color
         end
     end
 

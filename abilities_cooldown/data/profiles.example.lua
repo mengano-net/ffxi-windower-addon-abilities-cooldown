@@ -17,21 +17,22 @@ return {
     -- defaults. Remove the leading "--" from a line to change it.
     ---------------------------------------------------------------------
     settings = {
-        -- warn_seconds  = 5,            -- last N seconds turn the bar to the warning color
+        -- style         = 'underline',  -- 'underline' (text over a line) or 'bar' (filled box)
+        -- line_height   = 7,            -- thickness of the line, underline style only
         -- font          = 'Arial',
         -- font_size     = 11,
         -- bar_width     = 140,          -- minimum width; a box widens to fit long labels
-        -- bar_height    = 22,
+        -- bar_height    = 22,           -- height of each row
         -- row_spacing   = 2,
-        -- bar_alpha     = 200,          -- 0-255, the filled part of the bar
-        -- bg_alpha      = 168,          -- 0-255, the empty part of the bar
+        -- bar_alpha     = 200,          -- 0-255, the filled part of the bar (bar style only)
+        -- bg_alpha      = 168,          -- 0-255, the empty part of the bar (bar style only)
         -- text_offset_y = 0,            -- nudge the text up (negative) or down (positive)
         -- grow          = 'down',       -- 'down' or 'up': which way rows stack
         -- colors = {                    -- each is { red, green, blue }, 0-255
-        --     bar   = { 255, 200, 0 },  -- normal fill
-        --     warn  = { 60, 220, 60 },  -- fill inside the warning window
+        --     start = { 230, 45, 35 },  -- fill right after use; fades via orange
+        --     ready = { 60, 220, 60 },  -- and yellow to this as it comes back
         --     text  = { 255, 255, 255 },
-        --     track = { 0, 0, 0 },      -- the empty part of the bar
+        --     track = { 0, 0, 0 },      -- the empty part of the bar or line
         -- },
     },
 

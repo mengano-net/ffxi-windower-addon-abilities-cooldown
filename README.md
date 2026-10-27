@@ -88,8 +88,8 @@ return {
 - Two-hour abilities are not tracked; they are rejected with a message.
 - A name that is misspelled, not learned, or not available to your current job,
   sub job or level is skipped, with a red message in chat.
-- The file also takes an optional `settings` block (colors, sizes, the warning
-  window). Every option is listed, commented out, in
+- The file also takes an optional `settings` block (style, colors, sizes). Every
+  option is listed, commented out, in
   [`data/profiles.example.lua`](abilities_cooldown/data/profiles.example.lua).
 - If the file has a mistake, the addon prints the line number in red and keeps
   using the last version that worked.
