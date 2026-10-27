@@ -40,7 +40,6 @@ luac.out
 *.hex
 
 # Local tooling artifacts (kept out of the public repo)
-ai-sessions-summary.md
 .claude/
 
 # A player's own live config and saved positions. profiles.lua holds real
