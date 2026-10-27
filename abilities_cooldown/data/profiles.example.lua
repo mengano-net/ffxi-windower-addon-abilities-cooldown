@@ -35,7 +35,7 @@ return {
         --     ready = { 60, 220, 60 },  -- and yellow to this as it comes back
         --     text  = { 255, 255, 255 },
         --     track = { 0, 0, 0 },      -- the empty part of the bar or line
-        --     background = { 160, 160, 160 }, -- panel top; it darkens toward the bottom
+        --     background = { 160, 160, 160 }, -- panel bottom; the top is 20% darker
         -- },
     },
 

@@ -36,7 +36,7 @@ M.defaults = {
         ready = { 60, 220, 60 },
         text  = { 255, 255, 255 },
         track = { 0, 0, 0 },
-        background = { 160, 160, 160 }, -- the panel's top; it darkens toward the bottom
+        background = { 160, 160, 160 }, -- the panel's bottom; the top is 20% darker
     },
 }
 

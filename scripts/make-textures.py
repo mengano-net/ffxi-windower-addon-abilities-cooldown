@@ -37,16 +37,16 @@ def write_png(path, width, height, pixel):
     )
 
 
-# Bottom brightness as a share of the top. The README preview's background
-# runs #2a3a4f -> #121a24, about 45%; the panel uses the same falloff.
-PANEL_BOTTOM = 0.45
+# Top brightness as a share of the bottom: the panel is 20% darker at the
+# top and lightens toward the bottom.
+PANEL_TOP = 0.80
 
 
 def panel(x, y, height=64):
-    """Vertical gradient, full brightness at the top to PANEL_BOTTOM at the
-    bottom. Tinted with colors.background, that is the top color."""
+    """Vertical gradient, PANEL_TOP brightness at the top to full at the
+    bottom. Tinted with colors.background, that is the bottom color."""
     t = y / (height - 1)
-    v = int(round(255 * (1 - (1 - PANEL_BOTTOM) * t)))
+    v = int(round(255 * (PANEL_TOP + (1 - PANEL_TOP) * t)))
     return (v, v, v, 255)
 
 
