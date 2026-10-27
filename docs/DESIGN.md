@@ -144,3 +144,17 @@ constants at the top of the script mirror them.
   Anything shaded, like the panel behind each box, is built from solid
   rectangles instead: the panel is 32 thin bands stepping from
   `colors.background_top` to `colors.background_bottom`.
+
+## Style lab (`ac_lab/`)
+
+A second, development-only addon for trying looks before changing
+`ac_view.lua`. It draws a grid of candidate row styles, each with two fake
+cooldowns cycling red -> green, over the same dark backdrop the addon ships.
+Nothing in it reads the game, and players never need it.
+
+- Deploy: `scripts/deploy-lab-to-windower.sh`, then `//lua load ac_lab`.
+- `//ac_lab help` lists the commands: color fade (`mode`, `from`), `speed`,
+  `only <n|name>` to focus on a style or a family (`only under`),
+  `backdrop on|off`, sizes and position, and `bench` for per-style update cost.
+- `under-thick` is the style the addon ships; `flat` is its `style = 'bar'`.
+- Solid rectangles only, for the reason in "Learned in the game" above.
