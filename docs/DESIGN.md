@@ -126,3 +126,13 @@ After deploying, reload in game: `//lua reload abilities_cooldown` (or
    change, or is a longer settle needed?
 6. Do the default sizes (140 px bars, boxes at x=1007 and x=1157) suit the
    player's UI scale?
+
+## README preview
+
+`docs/preview.svg` is the animated mockup at the top of the README. It is
+generated, not hand-edited: `python3 scripts/make-readme-preview.py` simulates
+a short scripted fight with the addon's rules (whitelist order, ready rows
+skipped, underline style, hue fade) and bakes it into CSS keyframes, since
+GitHub plays CSS animation in images but strips scripts. Re-run it after
+changing the defaults in `ac_config.lua` or the look in `ac_view.lua`; the
+constants at the top of the script mirror them.

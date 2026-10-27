@@ -3,6 +3,10 @@
 A [Windower 4](https://www.windower.net/) addon for Final Fantasy XI that shows a
 draining line for the job abilities and spells **you choose**, and nothing else.
 
+<p align="center">
+  <img src="docs/preview.svg" alt="Animated preview: two boxes, main job and sub job, whose rows count down, drain and fade from red through orange and yellow to green, and disappear when ready" width="412">
+</p>
+
 Most cooldown displays track everything your job has, so the box fills with
 clutter. This one tracks only the whitelist you write, in a plain Lua file with
 comments, per character and per job/sub-job.
