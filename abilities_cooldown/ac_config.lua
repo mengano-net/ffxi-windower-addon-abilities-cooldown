@@ -28,7 +28,7 @@ M.defaults = {
     text_offset_y = 0,          -- nudge row text up (negative) or down (positive)
     grow          = 'down',     -- 'down' or 'up': which way new rows stack
     background    = true,       -- draw a panel behind each box
-    background_alpha = 170,     -- 0-255, the panel's opacity
+    background_alpha = 200,     -- 0-255, the panel's opacity
     -- The fill fades from start (just used) to ready (about to come back)
     -- around the color wheel, so red passes through orange and yellow.
     colors = {
@@ -36,8 +36,8 @@ M.defaults = {
         ready = { 60, 220, 60 },
         text  = { 255, 255, 255 },
         track = { 0, 0, 0 },
-        background_top    = { 128, 128, 128 }, -- the panel fades from this at the top
-        background_bottom = { 160, 160, 160 }, -- to this at the bottom
+        background_top    = { 30, 30, 30 },   -- the panel fades from this at the top
+        background_bottom = { 90, 90, 90 },   -- to this at the bottom
     },
 }
 

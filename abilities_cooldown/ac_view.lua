@@ -15,7 +15,7 @@
 
 -- Rectangles in a panel's gradient. Enough that each step is a couple of
 -- grey levels, too small to show as stripes.
-local PANEL_BANDS = 16
+local PANEL_BANDS = 32
 --
 -- Dragging is handled here, not by the texts/images libraries: their built-in
 -- drag moves one object at a time, which would tear a row apart. Every object

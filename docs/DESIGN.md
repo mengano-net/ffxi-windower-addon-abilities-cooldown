@@ -142,5 +142,5 @@ constants at the top of the script mirror them.
 - **Textured images draw as flat color.** An image given a PNG texture
   (`windower.prim.set_texture`) showed only its tint color, with no gradient.
   Anything shaded, like the panel behind each box, is built from solid
-  rectangles instead: the panel is 16 thin bands stepping from
+  rectangles instead: the panel is 32 thin bands stepping from
   `colors.background_top` to `colors.background_bottom`.
