@@ -48,3 +48,4 @@ luac.out
 abilities_cooldown/data/profiles.lua
 abilities_cooldown/data/state.json
 
+dist/
