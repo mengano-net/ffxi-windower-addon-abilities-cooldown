@@ -1,16 +1,18 @@
 # ffxi-windower-addon-abilities-cooldown
 
 A [Windower 4](https://www.windower.net/) addon for Final Fantasy XI that shows a
-draining bar for the job abilities and spells **you choose**, and nothing else.
+draining line for the job abilities and spells **you choose**, and nothing else.
 
 Most cooldown displays track everything your job has, so the box fills with
 clutter. This one tracks only the whitelist you write, in a plain Lua file with
 comments, per character and per job/sub-job.
 
 - Two boxes: one for your main job, one for your sub job.
-- Each row is a bar that drains as the recast runs down, with the name and the
-  seconds left. A row disappears the moment the ability is ready.
-- The last few seconds (5 by default) turn the bar red.
+- Each row is the name and the seconds left, over a thin line that drains as
+  the recast runs down. A row disappears the moment the ability is ready.
+- The line fades from red, through orange and yellow, to green as it comes
+  back, so you can tell at a glance how close it is. (Prefer a filled box?
+  Set `style = 'bar'`.)
 - Drag a box to move it; the position is remembered.
 
 ## What this tracks (and what it doesn't)
@@ -88,8 +90,8 @@ return {
 - Two-hour abilities are not tracked; they are rejected with a message.
 - A name that is misspelled, not learned, or not available to your current job,
   sub job or level is skipped, with a red message in chat.
-- The file also takes an optional `settings` block (colors, sizes, the warning
-  window). Every option is listed, commented out, in
+- The file also takes an optional `settings` block (style, colors, sizes). Every
+  option is listed, commented out, in
   [`data/profiles.example.lua`](abilities_cooldown/data/profiles.example.lua).
 - If the file has a mistake, the addon prints the line number in red and keeps
   using the last version that worked.

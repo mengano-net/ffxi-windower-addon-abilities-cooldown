@@ -218,7 +218,6 @@ local function collect(list, ability_recasts, spell_recasts, box_name)
                 label    = row.label,
                 time     = timers.format_time(remaining),
                 fraction = timers.fraction(remaining, max),
-                warn     = timers.is_warning(remaining, settings.warn_seconds),
             }
             if debug_enabled and os.clock() - last_debug >= 1 then
                 say(string.format('%s | %s %s recast_id=%s raw=%s -> %.1fs', box_name, row.kind, row.name, tostring(row.recast_id), tostring(raw), remaining))

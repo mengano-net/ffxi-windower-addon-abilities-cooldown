@@ -1,6 +1,6 @@
 ---------------------------------------------------
 -- abilities_cooldown: countdown math
--- Pure helpers with no Windower calls: time text, the warning window, and
+-- Pure helpers with no Windower calls: time text, the bar fraction, and
 -- per-row bar-maximum tracking.
 --
 -- Usage:
@@ -80,14 +80,6 @@ function M.fraction(remaining, max)
         return 1
     end
     return f
-end
-
--- is_warning(remaining, warn_seconds)
--- True inside the warning window. Compares the number the player sees (the
--- rounded-up countdown), so the color change lands exactly when the text
--- reads warn_seconds.
-function M.is_warning(remaining, warn_seconds)
-    return math.ceil(remaining) <= warn_seconds
 end
 
 return M
