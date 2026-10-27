@@ -29,7 +29,7 @@ return {
         -- grow          = 'down',       -- 'down' or 'up': which way rows stack
         -- colors = {                    -- each is { red, green, blue }, 0-255
         --     bar   = { 255, 200, 0 },  -- normal fill
-        --     warn  = { 255, 60, 60 },  -- fill inside the warning window
+        --     warn  = { 60, 220, 60 },  -- fill inside the warning window
         --     text  = { 255, 255, 255 },
         --     track = { 0, 0, 0 },      -- the empty part of the bar
         -- },

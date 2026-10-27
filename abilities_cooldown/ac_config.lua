@@ -28,7 +28,7 @@ M.defaults = {
     grow          = 'down',     -- 'down' or 'up': which way new rows stack
     colors = {
         bar   = { 255, 200, 0 },
-        warn  = { 255, 60, 60 },
+        warn  = { 60, 220, 60 },
         text  = { 255, 255, 255 },
         track = { 0, 0, 0 },
     },
