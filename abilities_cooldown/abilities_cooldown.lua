@@ -10,7 +10,7 @@
 ---------------------------------------------------
 _addon.name     = 'Abilities Cooldown'
 _addon.author   = 'Mengano'
-_addon.version  = '0.1.0'
+_addon.version  = '0.2.0'
 _addon.commands = { 'abilities_cooldown' }
 
 local config  = require('ac_config')
