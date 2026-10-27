@@ -33,10 +33,8 @@ FILES=(
     ac_timers.lua
     ac_view.lua
     data/profiles.example.lua
-    textures/panel.png
 )
 
-mkdir -p "$DST/textures"
 for f in "${FILES[@]}"; do
     cp -v "$SRC/$f" "$DST/$f"
 done

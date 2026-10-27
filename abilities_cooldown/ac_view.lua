@@ -9,8 +9,13 @@
 -- line; 'bar' draws it inside a filled box. Either way the fill drains as the
 -- recast runs down and fades from colors.start to colors.ready.
 --
--- Behind each box sits an optional panel: one image with a grey gradient
--- texture (textures/panel.png), sized to the rows currently shown.
+-- Behind each box sits an optional panel: a grey gradient, sized to the rows
+-- currently shown. Textured images draw as flat color in game (the texture
+-- is ignored), so the gradient is a stack of thin solid rectangles.
+
+-- Rectangles in a panel's gradient. Enough that each step is a couple of
+-- grey levels, too small to show as stripes.
+local PANEL_BANDS = 16
 --
 -- Dragging is handled here, not by the texts/images libraries: their built-in
 -- drag moves one object at a time, which would tear a row apart. Every object
@@ -110,22 +115,34 @@ local function fade(progress)
 end
 
 -- make_panel()
--- The gradient behind a box, or nil when background is off. Starts hidden.
--- It must be created before the box's rows: images draw in creation order.
+-- The gradient behind a box: PANEL_BANDS rectangles, top to bottom, each
+-- colored a step closer from background_top to background_bottom. nil when
+-- background is off. Starts hidden. It must be created before the box's
+-- rows: images draw in creation order.
 local function make_panel()
     if not settings.background then
         return nil
     end
-    local c = settings.colors.background
-    local panel = images.new({
-        pos       = { x = 0, y = 0 },
-        color     = { alpha = settings.background_alpha, red = c[1], green = c[2], blue = c[3] },
-        size      = { width = settings.bar_width, height = settings.bar_height },
-        texture   = { path = windower.addon_path .. 'textures/panel.png', fit = false },
-        draggable = false,
-    })
-    panel:hide()
-    return panel
+    local top, bottom = settings.colors.background_top, settings.colors.background_bottom
+    local bands = {}
+    for i = 1, PANEL_BANDS do
+        local t = (i - 0.5) / PANEL_BANDS
+        local band = images.new({
+            pos       = { x = 0, y = 0 },
+            color     = {
+                alpha = settings.background_alpha,
+                red   = math.floor(top[1] + (bottom[1] - top[1]) * t + 0.5),
+                green = math.floor(top[2] + (bottom[2] - top[2]) * t + 0.5),
+                blue  = math.floor(top[3] + (bottom[3] - top[3]) * t + 0.5),
+            },
+            size      = { width = settings.bar_width, height = 1 },
+            texture   = { path = '', fit = false },
+            draggable = false,
+        })
+        band:hide()
+        bands[i] = band
+    end
+    return bands
 end
 
 local function new_box(name, position)
@@ -155,25 +172,41 @@ local function update_panel(box)
         return
     end
     local on = box.shown > 0
-    if box.panel_on ~= on then
-        box.panel_on = on
-        if on then panel:show() else panel:hide() end
-    end
     if not on then
+        if box.panel_on then
+            for _, band in ipairs(panel) do
+                band:hide()
+            end
+            box.panel_on, box.panel_key = false, nil
+        end
         return
     end
     local x, y, w, h = panel_rect(box)
     local key = x .. ',' .. y .. ',' .. w .. ',' .. h
-    if box.panel_key ~= key then
-        panel:pos(x, y)
-        panel:size(w, h)
-        box.panel_key = key
+    if box.panel_key == key then
+        return
+    end
+    box.panel_key, box.panel_on = key, true
+    -- Split the height between the bands; a band left with no height (a
+    -- panel shorter than PANEL_BANDS pixels) is hidden.
+    for i, band in ipairs(panel) do
+        local y0 = y + math.floor(h * (i - 1) / PANEL_BANDS)
+        local y1 = y + math.floor(h * i / PANEL_BANDS)
+        if y1 > y0 then
+            band:pos(x, y0)
+            band:size(w, y1 - y0)
+            band:show()
+        else
+            band:hide()
+        end
     end
 end
 
 local function destroy_panel(box)
     if box.panel then
-        box.panel:destroy()
+        for _, band in ipairs(box.panel) do
+            band:destroy()
+        end
         box.panel = nil
     end
     box.panel_on, box.panel_key = nil, nil
