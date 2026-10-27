@@ -11,6 +11,10 @@ First implementation. Not yet tried in the game.
   -> green over the recast; rows disappear when ready. The original filled bar
   is still available with `style = 'bar'`. Colors are `colors.start` and
   `colors.ready`.
+- A dark grey gradient panel sits behind each box (top 30 -> bottom 90,
+  opacity 200), sized to the rows shown; drag a box by it. Tune it with
+  `colors.background_top`, `colors.background_bottom` and `background_alpha`,
+  or turn it off with `background = false`.
 - Two-hour abilities and unavailable or unknown entries are rejected with a red
   chat message.
 - Draggable boxes with saved positions.

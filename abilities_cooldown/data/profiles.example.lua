@@ -28,11 +28,15 @@ return {
         -- bg_alpha      = 168,          -- 0-255, the empty part of the bar (bar style only)
         -- text_offset_y = 0,            -- nudge the text up (negative) or down (positive)
         -- grow          = 'down',       -- 'down' or 'up': which way rows stack
+        -- background    = true,         -- grey panel behind each box (false to turn off)
+        -- background_alpha = 200,       -- 0-255, the panel's opacity
         -- colors = {                    -- each is { red, green, blue }, 0-255
         --     start = { 230, 45, 35 },  -- fill right after use; fades via orange
         --     ready = { 60, 220, 60 },  -- and yellow to this as it comes back
         --     text  = { 255, 255, 255 },
         --     track = { 0, 0, 0 },      -- the empty part of the bar or line
+        --     background_top    = { 30, 30, 30 },   -- panel fades from this at the top
+        --     background_bottom = { 90, 90, 90 },   -- to this at the bottom
         -- },
     },
 

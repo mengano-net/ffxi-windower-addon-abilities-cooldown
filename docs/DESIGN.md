@@ -136,3 +136,11 @@ skipped, underline style, hue fade) and bakes it into CSS keyframes, since
 GitHub plays CSS animation in images but strips scripts. Re-run it after
 changing the defaults in `ac_config.lua` or the look in `ac_view.lua`; the
 constants at the top of the script mirror them.
+
+## Learned in the game
+
+- **Textured images draw as flat color.** An image given a PNG texture
+  (`windower.prim.set_texture`) showed only its tint color, with no gradient.
+  Anything shaded, like the panel behind each box, is built from solid
+  rectangles instead: the panel is 32 thin bands stepping from
+  `colors.background_top` to `colors.background_bottom`.

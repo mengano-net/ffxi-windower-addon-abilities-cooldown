@@ -9,6 +9,14 @@
 -- line; 'bar' draws it inside a filled box. Either way the fill drains as the
 -- recast runs down and fades from colors.start to colors.ready.
 --
+-- Behind each box sits an optional panel: a grey gradient, sized to the rows
+-- currently shown. Textured images draw as flat color in game (the texture
+-- is ignored), so the gradient is a stack of thin solid rectangles.
+
+-- Rectangles in a panel's gradient. Enough that each step is a couple of
+-- grey levels, too small to show as stripes.
+local PANEL_BANDS = 32
+--
 -- Dragging is handled here, not by the texts/images libraries: their built-in
 -- drag moves one object at a time, which would tear a row apart. Every object
 -- is created non-draggable, and one mouse handler moves a whole box.
@@ -42,6 +50,12 @@ local WIDTH_TRIM = 16
 -- (bar_alpha and bg_alpha only apply to the bar style.)
 local LINE_ALPHA  = 255
 local TRACK_ALPHA = 200
+
+-- Space between the rows and the panel's edge. The top needs more: in the
+-- underline style the text rises a few pixels above the row's slot.
+local PANEL_PAD_X      = 8
+local PANEL_PAD_TOP    = 8
+local PANEL_PAD_BOTTOM = 6
 
 local settings
 local boxes = {}
@@ -100,12 +114,102 @@ local function fade(progress)
     return hsv_to_rgb(h1 + (h2 - h1) * t, s1 + (s2 - s1) * t, v1 + (v2 - v1) * t)
 end
 
+-- make_panel()
+-- The gradient behind a box: PANEL_BANDS rectangles, top to bottom, each
+-- colored a step closer from background_top to background_bottom. nil when
+-- background is off. Starts hidden. It must be created before the box's
+-- rows: images draw in creation order.
+local function make_panel()
+    if not settings.background then
+        return nil
+    end
+    local top, bottom = settings.colors.background_top, settings.colors.background_bottom
+    local bands = {}
+    for i = 1, PANEL_BANDS do
+        local t = (i - 0.5) / PANEL_BANDS
+        local band = images.new({
+            pos       = { x = 0, y = 0 },
+            color     = {
+                alpha = settings.background_alpha,
+                red   = math.floor(top[1] + (bottom[1] - top[1]) * t + 0.5),
+                green = math.floor(top[2] + (bottom[2] - top[2]) * t + 0.5),
+                blue  = math.floor(top[3] + (bottom[3] - top[3]) * t + 0.5),
+            },
+            size      = { width = settings.bar_width, height = 1 },
+            texture   = { path = '', fit = false },
+            draggable = false,
+        })
+        band:hide()
+        bands[i] = band
+    end
+    return bands
+end
+
 local function new_box(name, position)
     return {
         name = name, x = position.x, y = position.y, rows = {}, shown = 0,
         width = settings.bar_width, -- grows to fit the longest label; see fit_width
         time_w = 0,                 -- widest countdown text seen so far
+        panel = make_panel(),
     }
+end
+
+-- panel_rect(box): x, y, width, height around the rows currently shown.
+-- Also the area that starts a drag.
+local function panel_rect(box)
+    local step = settings.bar_height + settings.row_spacing
+    local rows_h = (box.shown - 1) * step + settings.bar_height
+    local top = settings.grow == 'up' and box.y - (box.shown - 1) * step or box.y
+    return box.x - PANEL_PAD_X, top - PANEL_PAD_TOP,
+        box.width + 2 * PANEL_PAD_X, rows_h + PANEL_PAD_TOP + PANEL_PAD_BOTTOM
+end
+
+-- update_panel(box): fit the panel to the shown rows, or hide it when the
+-- box is empty. Skips the calls when nothing changed.
+local function update_panel(box)
+    local panel = box.panel
+    if not panel then
+        return
+    end
+    local on = box.shown > 0
+    if not on then
+        if box.panel_on then
+            for _, band in ipairs(panel) do
+                band:hide()
+            end
+            box.panel_on, box.panel_key = false, nil
+        end
+        return
+    end
+    local x, y, w, h = panel_rect(box)
+    local key = x .. ',' .. y .. ',' .. w .. ',' .. h
+    if box.panel_key == key then
+        return
+    end
+    box.panel_key, box.panel_on = key, true
+    -- Split the height between the bands; a band left with no height (a
+    -- panel shorter than PANEL_BANDS pixels) is hidden.
+    for i, band in ipairs(panel) do
+        local y0 = y + math.floor(h * (i - 1) / PANEL_BANDS)
+        local y1 = y + math.floor(h * i / PANEL_BANDS)
+        if y1 > y0 then
+            band:pos(x, y0)
+            band:size(w, y1 - y0)
+            band:show()
+        else
+            band:hide()
+        end
+    end
+end
+
+local function destroy_panel(box)
+    if box.panel then
+        for _, band in ipairs(box.panel) do
+            band:destroy()
+        end
+        box.panel = nil
+    end
+    box.panel_on, box.panel_key = nil, nil
 end
 
 -- make_bar(color, alpha)
@@ -216,6 +320,7 @@ local function reposition(box)
     for i = 1, box.shown do
         place_row(box, box.rows[i], i - 1)
     end
+    update_panel(box)
 end
 
 -- init(new_settings, positions, moved_callback)
@@ -241,6 +346,9 @@ function M.apply_settings(new_settings)
         box.shown = 0
         box.width = settings.bar_width
         box.time_w = 0
+        -- New panel before any new row, so it stays underneath.
+        destroy_panel(box)
+        box.panel = make_panel()
     end
 end
 
@@ -347,6 +455,7 @@ function M.render(name, data)
         set_row_visible(box.rows[i], false)
     end
     box.shown = count
+    update_panel(box)
 end
 
 function M.destroy()
@@ -356,24 +465,17 @@ function M.destroy()
         end
         box.rows = {}
         box.shown = 0
+        destroy_panel(box)
     end
 end
 
--- hit(box, x, y): is the point inside the rows currently drawn for this box?
+-- hit(box, x, y): is the point inside the box as drawn, panel included?
 local function hit(box, x, y)
     if box.shown == 0 then
         return false
     end
-    local step = settings.bar_height + settings.row_spacing
-    local top, bottom
-    if settings.grow == 'up' then
-        top = box.y - (box.shown - 1) * step
-        bottom = box.y + settings.bar_height
-    else
-        top = box.y
-        bottom = box.y + (box.shown - 1) * step + settings.bar_height
-    end
-    return x >= box.x and x <= box.x + box.width and y >= top and y <= bottom
+    local px, py, pw, ph = panel_rect(box)
+    return x >= px and x <= px + pw and y >= py and y <= py + ph
 end
 
 -- Mouse: kind 0 = move, 1 = left button down, 2 = left button up. Returning

@@ -17,6 +17,8 @@ comments, per character and per job/sub-job.
 - The line fades from red, through orange and yellow, to green as it comes
   back, so you can tell at a glance how close it is. (Prefer a filled box?
   Set `style = 'bar'`.)
+- Each box sits on a dark, semi-transparent gradient panel so it stands out
+  over busy scenes.
 - Drag a box to move it; the position is remembered.
 
 ## What this tracks (and what it doesn't)
