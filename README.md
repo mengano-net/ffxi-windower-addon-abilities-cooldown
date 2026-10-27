@@ -119,6 +119,10 @@ return {
 Only invited collaborators can open pull requests on this repository, and
 `main` is protected: changes arrive through a feature branch and a pull request.
 
+To try a new look before changing the addon, use the style lab in `ac_lab/`, a
+separate development-only addon (players don't need it). See
+[DESIGN.md](docs/DESIGN.md#style-lab-ac_lab).
+
 ## License
 
 [MIT](LICENSE)
