@@ -1,20 +1,30 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.2.0
 
-First implementation. Not yet tried in the game.
+A new look, picked in game with the style lab.
 
-- Two boxes (main job, sub job) with a draining bar, name and seconds left per row.
-- Whitelist-only tracking of job abilities and spells from a commented Lua file,
-  per character and main job, with sub-job lists.
-- Rows are text over a 7px line that drains and fades red -> orange -> yellow
-  -> green over the recast; rows disappear when ready. The original filled bar
-  is still available with `style = 'bar'`. Colors are `colors.start` and
-  `colors.ready`.
+- Rows are text over a 7px line that drains as the recast runs down
+  (`style = 'underline'`, the new default). The original filled bar is still
+  available with `style = 'bar'`; `line_height` sets the line's thickness.
+- The line fades red -> orange -> yellow -> green over the whole recast,
+  instead of turning red in the last few seconds. The ends are
+  `colors.start` and `colors.ready`; `warn_seconds`, `colors.bar` and
+  `colors.warn` are gone.
 - A dark grey gradient panel sits behind each box (top 30 -> bottom 90,
   opacity 200), sized to the rows shown; drag a box by it. Tune it with
   `colors.background_top`, `colors.background_bottom` and `background_alpha`,
   or turn it off with `background = false`.
+- The README opens with an animated preview of the boxes.
+
+## 0.1.0
+
+First implementation.
+
+- Two boxes (main job, sub job) with a draining bar, name and seconds left per row.
+- Whitelist-only tracking of job abilities and spells from a commented Lua file,
+  per character and main job, with sub-job lists.
+- Red warning window (default last 5 seconds); rows disappear when ready.
 - Two-hour abilities and unavailable or unknown entries are rejected with a red
   chat message.
 - Draggable boxes with saved positions.
