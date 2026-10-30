@@ -102,6 +102,49 @@ return {
 - If the file has a mistake, the addon prints the line number in red and keeps
   using the last version that worked.
 
+### Abilities that share a cooldown
+
+The game gives some groups of job abilities one shared recast timer (the same
+`recast_id`). Using any ability in the group puts the whole group on cooldown.
+The addon reads timers by `recast_id`, so if you list two abilities from the
+same group, both rows count down together whichever one you used. That's how
+the game works, not a bug.
+
+Common groups (from Windower's `res/job_abilities.lua`):
+
+| Job | recast_id | Abilities sharing it |
+|---|---|---|
+| DNC | 220 | Quickstep, Box Step, Stutter Step, Feather Step |
+| DNC | 216 | Drain Samba (I–III), Aspir Samba (I–II), Haste Samba |
+| DNC | 218 | Spectral Jig, Chocobo Jig (I–II) |
+| DNC | 221 | Animated Flourish, Desperate Flourish, Violent Flourish |
+| DNC | 222 | Reverse Flourish, Building Flourish, Wild Flourish |
+| DNC | 226 | Climactic Flourish, Striking Flourish, Ternary Flourish |
+| COR | 193 | Phantom Roll and every Roll |
+| COR | 195 | All elemental Quick Draw shots (Fire Shot … Dark Shot) |
+| PUP | 210 | All Maneuvers |
+| SCH | 231 | All Stratagems (Penury, Celerity, Rapture, Accession, …) |
+| RUN | 10 | All Runes (Ignis, Gelus, Flabra, …) |
+| SMN | 173 / 174 | Every Blood Pact: Rage / every Blood Pact: Ward |
+| WAR | 6 | Enrage, Warrior's Charge |
+| THF | 69 | Accomplice, Collaborator |
+| RNG | 126 | Unlimited Shot, Double Shot |
+
+**List only one ability from each group** and give it a label that names the
+group:
+
+```lua
+-- Two rows that always show the same timer:
+sub = { DNC = { { 'Quickstep', label = 'Lower Evasion' }, { 'Box Step', label = 'Lower Defense' } } },
+
+-- One row instead:
+sub = { DNC = { { 'Quickstep', label = 'Steps' } } },
+```
+
+Which ability you pick doesn't matter as long as your current job and level
+can use it; the timer is the same. To check another ability, look up its
+`recast_id` in `res/job_abilities.lua` in your Windower folder.
+
 ## Commands
 
 `//abilities_cooldown <command>`
