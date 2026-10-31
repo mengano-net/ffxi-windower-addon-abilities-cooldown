@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The README explains abilities that share one recast timer (DNC Steps,
+  COR Rolls, SCH Stratagems and others): list one ability per group, or
+  the rows count down together.
+
 ## 0.2.0
 
 A new look, picked in game with the style lab.
