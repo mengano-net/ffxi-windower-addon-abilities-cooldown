@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Dragging a box to within 8px of the other box's height snaps it level,
+  so the main and sub job boxes line up exactly instead of ending a pixel
+  or two apart.
 - The README explains abilities that share one recast timer (DNC Steps,
   COR Rolls, SCH Stratagems and others): list one ability per group, or
   the rows count down together.
