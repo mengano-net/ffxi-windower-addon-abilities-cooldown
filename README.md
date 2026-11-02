@@ -19,7 +19,8 @@ comments, per character and per job/sub-job.
   Set `style = 'bar'`.)
 - Each box sits on a dark, semi-transparent gradient panel so it stands out
   over busy scenes.
-- Drag a box to move it; the position is remembered.
+- Drag a box to move it; the position is remembered. Drag one level with
+  the other and it snaps into line, so the two boxes sit at the same height.
 
 ## What this tracks (and what it doesn't)
 

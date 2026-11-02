@@ -57,6 +57,10 @@ local PANEL_PAD_X      = 8
 local PANEL_PAD_TOP    = 8
 local PANEL_PAD_BOTTOM = 6
 
+-- While dragging, a box whose top row comes within this many pixels of the
+-- other box's top row snaps level with it, so the two line up exactly.
+local SNAP_Y = 8
+
 local settings
 local boxes = {}
 local visible = true
@@ -478,6 +482,16 @@ local function hit(box, x, y)
     return x >= px and x <= px + pw and y >= py and y <= py + ph
 end
 
+-- snap_y(box, y): y, or the other box's y when it is shown and within SNAP_Y.
+local function snap_y(box, y)
+    for _, other in pairs(boxes) do
+        if other ~= box and other.shown > 0 and math.abs(other.y - y) <= SNAP_Y then
+            return other.y
+        end
+    end
+    return y
+end
+
 -- Mouse: kind 0 = move, 1 = left button down, 2 = left button up. Returning
 -- true swallows the event so a drag does not also click the game world.
 windower.register_event('mouse', function(kind, x, y, delta, blocked)
@@ -494,7 +508,7 @@ windower.register_event('mouse', function(kind, x, y, delta, blocked)
     elseif kind == 0 then
         if drag then
             drag.box.x = x - drag.dx
-            drag.box.y = y - drag.dy
+            drag.box.y = snap_y(drag.box, y - drag.dy)
             drag.moved = true
             reposition(drag.box)
             return true
