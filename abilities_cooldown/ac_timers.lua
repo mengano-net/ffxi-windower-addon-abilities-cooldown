@@ -11,11 +11,15 @@
 ---------------------------------------------------
 local M = {}
 
--- Two readings closer than this are treated as the same countdown. Spell
--- recasts arrive in 1/60th-second ticks (converted to fractional seconds by
--- the caller), so consecutive readings of one countdown never rise; any rise
--- larger than this means the ability was used again.
-local EPSILON = 0.01
+-- A reading may rise by up to this many seconds and still count as the same
+-- countdown. Using any ability makes the server resend every recast, and the
+-- client's own countdown can be a second or so off from it, so other rows'
+-- readings jump up slightly. With a tiny tolerance that jump looked like a
+-- new use and refilled their bars (seen with Meditate then Hasso on SAM).
+-- A real new use while still on cooldown only happens with charge-based
+-- abilities (Stratagems, Quick Draw, Ready), and that adds a whole charge
+-- interval, far more than this.
+local RESYNC_TOLERANCE = 3
 
 -- format_time(seconds)
 -- Whole seconds under a minute ("42"), then m:ss ("2:22"). Rounds UP so a
@@ -49,8 +53,10 @@ end
 -- so a finished countdown is forgotten. Returns the bar maximum for this
 -- countdown, or nil when the row is ready.
 --
--- A reading higher than the previous one means a new use (see EPSILON), so
--- the maximum is re-recorded. This also copes with the addon starting
+-- A reading well above the previous one means a new use (see
+-- RESYNC_TOLERANCE), so the maximum is re-recorded. Smaller rises keep the
+-- maximum; fraction() clamps if one overshoots it. This also copes with the
+-- addon starting
 -- mid-cooldown: the first reading seen becomes the maximum, so that bar
 -- looks full until the ability is used again.
 function M.observe(tracker, key, remaining)
@@ -60,7 +66,7 @@ function M.observe(tracker, key, remaining)
         return nil
     end
     local last = tracker.last[key]
-    if last == nil or remaining > last + EPSILON then
+    if last == nil or remaining > last + RESYNC_TOLERANCE then
         tracker.max[key] = remaining
     end
     tracker.last[key] = remaining
