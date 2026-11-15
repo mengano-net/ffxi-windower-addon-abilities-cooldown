@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Using one ability no longer refills the bars of others already on
+  cooldown (e.g. Hasso after Meditate). The server resends every recast
+  when you use an ability; a 1-2 second jump in another timer was being
+  read as a fresh use.
 - Dragging a box to within 8px of the other box's height snaps it level,
   so the main and sub job boxes line up exactly instead of ending a pixel
   or two apart.
