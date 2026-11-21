@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
 
 - Pet commands (Blood Pact: Rage / Ward, Ready, Deploy...) no longer get
   rejected when no pet is out after a login or job change. The game only
