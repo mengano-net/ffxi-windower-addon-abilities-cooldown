@@ -13,11 +13,16 @@
 --   abilities      set: ability id -> true   (get_abilities().job_abilities)
 --   spells         table: spell id -> true   (get_spells())
 --   main_job_id, main_job_level, sub_job_id, sub_job_level
+--   has_pet        true when a pet is out (pet commands are only listed then)
 --
 -- Returns:
 --   row  { kind = 'ability'|'spell', id, recast_id, name, divisor }, or nil
 --   err  why the entry was rejected (nil on success)
 --   note a warning worth showing even though the entry was accepted
+--   pet  true when the entry was rejected only because it is a pet command
+--        (Blood Pact: Rage, Ready, Deploy...). The game leaves pet commands
+--        out of get_abilities() until a pet is out, so the caller should try
+--        again once one is, rather than treat the entry as wrong.
 ---------------------------------------------------
 local res = require('resources')
 
@@ -169,7 +174,14 @@ function M.resolve(spec, ctx)
         return { kind = 'spell', id = spell.id, recast_id = spell.recast_id, name = spell.en, divisor = 60 }, nil, note
     end
 
-    return nil, '"' .. name .. '" is not available to your current job, sub job or level (or not learned)'
+    local err = '"' .. name .. '" is not available to your current job, sub job or level (or not learned)'
+    local pet_command = first_available(trackable, function(a)
+        return a.type == 'PetCommand'
+    end)
+    if pet_command and not ctx.has_pet then
+        return nil, err, nil, true
+    end
+    return nil, err
 end
 
 return M

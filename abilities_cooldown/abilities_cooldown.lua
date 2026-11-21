@@ -43,6 +43,8 @@ local settings = config.settings()
 local tracker = timers.new_tracker()
 
 local rows = { main = {}, sub = {} }   -- resolved whitelist rows per box
+local waiting = {}                -- pet-command entries held until a pet is out
+local pet_since = nil             -- when a pet was first seen while entries wait
 local counts = { main = 0, sub = 0, rejected = 0 }
 local profile_status = 'not loaded yet'
 
@@ -92,6 +94,7 @@ local function build_context(player)
         main_job_level = player.main_job_level or 0,
         sub_job_id     = player.sub_job_id,
         sub_job_level  = player.sub_job_level or 0,
+        has_pet        = windower.ffxi.get_mob_by_target('pet') ~= nil,
     }
 end
 
@@ -114,16 +117,24 @@ local function data_ready(ctx, player)
     return false
 end
 
-local function resolve_list(entries, where, ctx)
+-- resolve_list(entries, box, where, ctx)
+-- Resolves one box's whitelist. Each row keeps its whitelist position (order)
+-- so a pet command accepted later can be slotted back in the same place.
+-- Pet commands rejected only because no pet is out go to `waiting` instead of
+-- being reported; see retry_waiting().
+local function resolve_list(entries, box, where, ctx)
     local out = {}
-    for _, entry in ipairs(entries) do
-        local row, err, note = resolve.resolve(entry.spec, ctx)
+    for i, entry in ipairs(entries) do
+        local row, err, note, pet = resolve.resolve(entry.spec, ctx)
         if row then
             row.label = entry.label or row.name
+            row.order = i
             out[#out + 1] = row
             if note then
                 report(where .. ': ' .. note)
             end
+        elseif pet then
+            waiting[#waiting + 1] = { entry = entry, box = box, where = where, order = i }
         else
             counts.rejected = counts.rejected + 1
             report(where .. ': ' .. err)
@@ -136,6 +147,8 @@ end
 -- Forget everything tracked (logout, or the start of a job change).
 local function clear_rows()
     rows = { main = {}, sub = {} }
+    waiting = {}
+    pet_since = nil
     counts = { main = 0, sub = 0, rejected = 0 }
     timers.reset(tracker)
 end
@@ -169,10 +182,62 @@ local function rebuild(player)
     local main_entries, sub_entries, malformed = config.get_entries(profile, player.sub_job, report)
     counts.rejected = counts.rejected + malformed
     local ctx = build_context(player)
-    rows.main = resolve_list(main_entries, 'main', ctx)
-    rows.sub = resolve_list(sub_entries, 'sub ' .. tostring(player.sub_job), ctx)
+    rows.main = resolve_list(main_entries, 'main', 'main', ctx)
+    rows.sub = resolve_list(sub_entries, 'sub', 'sub ' .. tostring(player.sub_job), ctx)
     counts.main = #rows.main
     counts.sub = #rows.sub
+end
+
+-- insert_in_order(list, row)
+-- Puts row before the first row that comes later in the whitelist.
+local function insert_in_order(list, row)
+    local at = #list + 1
+    for i, other in ipairs(list) do
+        if other.order > row.order then
+            at = i
+            break
+        end
+    end
+    table.insert(list, at, row)
+end
+
+-- retry_waiting(player)
+-- The game only lists pet commands while a pet is out, so entries such as
+-- "Blood Pact: Rage" are held after a rebuild until one is. Once accepted
+-- they stay tracked until the next job change, with or without the pet (the
+-- recast keeps counting either way). An entry still unavailable after a pet
+-- has been out for SETTLE_SECONDS really is wrong, and is reported then.
+local function retry_waiting(player)
+    if #waiting == 0 then
+        return
+    end
+    if not windower.ffxi.get_mob_by_target('pet') then
+        pet_since = nil
+        return
+    end
+    local ctx = build_context(player)
+    pet_since = pet_since or os.clock()
+    local give_up = os.clock() - pet_since >= SETTLE_SECONDS
+
+    local still = {}
+    for _, held in ipairs(waiting) do
+        local row, err, note = resolve.resolve(held.entry.spec, ctx)
+        if row then
+            row.label = held.entry.label or row.name
+            row.order = held.order
+            insert_in_order(rows[held.box], row)
+            counts[held.box] = counts[held.box] + 1
+            if note then
+                report(held.where .. ': ' .. note)
+            end
+        elseif give_up then
+            counts.rejected = counts.rejected + 1
+            report(held.where .. ': ' .. err)
+        else
+            still[#still + 1] = held
+        end
+    end
+    waiting = still
 end
 
 -- status_lines()
@@ -186,6 +251,9 @@ local function status_lines()
         'profile: ' .. profile_status,
         string.format('entries loaded: main %d, sub %d; rejected: %d', counts.main, counts.sub, counts.rejected),
     }
+    if #waiting > 0 then
+        lines[#lines + 1] = string.format('waiting for a pet: %d pet command(s) load once one is out', #waiting)
+    end
     if pending_since then
         lines[#lines + 1] = 'settling after a login or job change; the lists will load shortly'
     end
@@ -248,6 +316,9 @@ local function refresh()
             rebuild(player)
             announce()
         end
+    end
+    if not pending_since then
+        retry_waiting(player)
     end
 
     local ability_recasts = windower.ffxi.get_ability_recasts() or {}
