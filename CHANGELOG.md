@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
 
+- Pet commands (Blood Pact: Rage / Ward, Ready, Deploy...) no longer get
+  rejected when no pet is out after a login or job change. The game only
+  lists them while a pet is out, so they now wait until one appears, take
+  their place in the box, and stay tracked after the pet is released.
 - Using one ability no longer refills the bars of others already on
   cooldown (e.g. Hasso after Meditate). The server resends every recast
   when you use an ability; a 1-2 second jump in another timer was being
